@@ -87,7 +87,18 @@ jobs:
           command: |
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-            npm install
+            
+            # Limpiar caché de npm
+            npm cache clean --force
+            
+            # Verificar que package.json existe
+            if [ ! -f "package.json" ]; then
+              echo "Error: package.json no encontrado"
+              exit 1
+            fi
+            
+            # Instalar con más verbose para debug
+            npm ci --verbose || npm install --verbose
       - run:
           name: Instalar Ionic y Capacitor
           command: |
