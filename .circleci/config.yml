@@ -90,7 +90,7 @@ jobs:
       - run:
           name: Instalar dependencias
           command: |
-            brew install node@20.19
+            brew install node@20
 
             # Limpiar node_modules del workspace anterior
             rm -rf node_modules
