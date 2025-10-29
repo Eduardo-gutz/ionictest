@@ -24,7 +24,7 @@ jobs:
 
   build-android:
     docker:
-      - image: cimg/android:2023.09.1-browsers
+      - image: cimg/android:2025.01.1-browsers
     steps:
       - attach_workspace:
           at: .
