@@ -90,7 +90,14 @@ jobs:
       - run:
           name: Instalar dependencias
           command: |
-            brew install node@20
+            brew install nvm
+
+            export NVM_DIR="$HOME/.nvm"
+              [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm
+              [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion" # This loads nvm bash_completion
+
+            nvm install 20.19.0
+            nvm use 20.19.0
 
             # Limpiar node_modules del workspace anterior
             rm -rf node_modules
