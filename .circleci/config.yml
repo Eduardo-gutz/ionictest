@@ -1,0 +1,157 @@
+version: 2.1
+
+orbs:
+  node: circleci/node@5.1.0
+
+jobs:
+  build-and-test:
+    docker:
+      - image: cimg/node:18.16
+    steps:
+      - checkout
+      - node/install-packages:
+          pkg-manager: npm
+      - run:
+          name: Instalar Ionic CLI
+          command: npm install -g @ionic/cli
+      - run:
+          name: Build de la aplicación web
+          command: ionic build --prod
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .
+
+  build-android:
+    docker:
+      - image: cimg/android:2023.12-node
+    steps:
+      - attach_workspace:
+          at: .
+      - run:
+          name: Instalar dependencias
+          command: npm install
+      - run:
+          name: Instalar Ionic y Capacitor
+          command: |
+            npm install -g @ionic/cli
+            npm install @capacitor/core @capacitor/cli
+      - run:
+          name: Sincronizar Capacitor
+          command: npx cap sync android
+      - run:
+          name: Decodificar keystore
+          command: |
+            echo $ANDROID_KEYSTORE_BASE64 | base64 -d > android/app/my-release-key.keystore
+      - run:
+          name: Crear archivo de propiedades de firma
+          command: |
+            echo "storeFile=my-release-key.keystore" > android/keystore.properties
+            echo "storePassword=$ANDROID_KEYSTORE_PASSWORD" >> android/keystore.properties
+            echo "keyAlias=$ANDROID_KEY_ALIAS" >> android/keystore.properties
+            echo "keyPassword=$ANDROID_KEY_PASSWORD" >> android/keystore.properties
+      - run:
+          name: Build APK/AAB
+          command: |
+            cd android
+            ./gradlew assembleRelease
+            # Para AAB (Google Play): ./gradlew bundleRelease
+      - store_artifacts:
+          path: android/app/build/outputs/apk/release/app-release.apk
+          destination: app-release.apk
+      - persist_to_workspace:
+          root: .
+          paths:
+            - android/app/build/outputs
+
+  build-ios:
+    macos:
+      xcode: 15.0.0
+    steps:
+      - attach_workspace:
+          at: .
+      - run:
+          name: Instalar Node.js
+          command: |
+            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            nvm install 18
+            nvm use 18
+      - run:
+          name: Instalar dependencias
+          command: |
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            npm install
+      - run:
+          name: Instalar Ionic y Capacitor
+          command: |
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            npm install -g @ionic/cli
+      - run:
+          name: Sincronizar Capacitor
+          command: |
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            npx cap sync ios
+      - run:
+          name: Instalar CocoaPods
+          command: |
+            cd ios/App
+            pod install
+      - run:
+          name: Configurar certificados
+          command: |
+            echo $IOS_CERTIFICATE_BASE64 | base64 -d > certificate.p12
+            echo $IOS_PROFILE_BASE64 | base64 -d > profile.mobileprovision
+            
+            security create-keychain -p "" build.keychain
+            security import certificate.p12 -k build.keychain -P $IOS_CERTIFICATE_PASSWORD -T /usr/bin/codesign
+            security list-keychains -s build.keychain
+            security default-keychain -s build.keychain
+            security unlock-keychain -p "" build.keychain
+            security set-keychain-settings -t 3600 -u build.keychain
+            security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
+            
+            mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+            cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
+      - run:
+          name: Build iOS
+          command: |
+            cd ios/App
+            xcodebuild -workspace App.xcworkspace \
+              -scheme App \
+              -configuration Release \
+              -archivePath App.xcarchive \
+              archive
+            
+            xcodebuild -exportArchive \
+              -archivePath App.xcarchive \
+              -exportOptionsPlist exportOptions.plist \
+              -exportPath ./build
+      - store_artifacts:
+          path: ios/App/build
+          destination: ios-build
+
+workflows:
+  build-and-deploy:
+    jobs:
+      - build-and-test
+      - build-android:
+          requires:
+            - build-and-test
+          filters:
+            branches:
+              only: 
+                - main
+                - develop
+      - build-ios:
+          requires:
+            - build-and-test
+          filters:
+            branches:
+              only: 
+                - main
+                - develop
