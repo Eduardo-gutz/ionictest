@@ -122,6 +122,25 @@ jobs:
             mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
             cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
       - run:
+          name: Crear exportOptions.plist
+          command: |
+              cat > ios/App/exportOptions.plist \<<EOF
+              <?xml version="1.0" encoding="UTF-8"?>
+              <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+              <plist version="1.0">
+              <dict>
+                  <key>method</key>
+                  <string>app-store</string>
+                  <key>teamID</key>
+                  <string>YOUR_TEAM_ID</string>
+                  <key>uploadSymbols</key>
+                  <true/>
+                  <key>compileBitcode</key>
+                  <false/>
+              </dict>
+              </plist>
+              EOF
+      - run:
           name: Build iOS
           command: |
             cd ios/App
