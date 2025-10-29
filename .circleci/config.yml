@@ -51,6 +51,9 @@ jobs:
             echo "keyAlias=$ANDROID_KEY_ALIAS" >> android/keystore.properties
             echo "keyPassword=$ANDROID_KEY_PASSWORD" >> android/keystore.properties
       - run:
+          name: Make gradlew executable
+          command: chmod +x ./gradlew
+      - run:
           name: Build APK/AAB
           command: |
             cd android
