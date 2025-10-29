@@ -34,8 +34,8 @@ jobs:
       - run:
           name: Instalar Ionic y Capacitor
           command: |
-            npm install -g @ionic/cli
-            npm install @capacitor/core @capacitor/cli
+            sudo npm install -g @ionic/cli
+            sudo npm install @capacitor/core @capacitor/cli
       - run:
           name: Sincronizar Capacitor
           command: npx cap sync android
