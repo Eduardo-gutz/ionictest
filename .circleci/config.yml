@@ -92,6 +92,11 @@ jobs:
           command: |
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            
+            # Limpiar node_modules del workspace anterior
+            rm -rf node_modules
+            
+            # Intentar npm ci, si falla usar npm install
             npm ci --legacy-peer-deps || npm install --legacy-peer-deps
       - save_cache:
           key: v1-npm-{{ checksum "package-lock.json" }}
