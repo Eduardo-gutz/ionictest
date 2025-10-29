@@ -13,7 +13,7 @@ jobs:
           pkg-manager: npm
       - run:
           name: Instalar Ionic CLI
-          command: npm install -g @ionic/cli
+          command: sudo npm install -g @ionic/cli
       - run:
           name: Build de la aplicación web
           command: ionic build --prod
