@@ -110,22 +110,13 @@ jobs:
             - node_modules
       - run:
           name: Instalar Ionic CLI
-          command: |
-            export NVM_DIR="$HOME/.nvm"
-            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-            npm install -g @ionic/cli
+          command: npm install -g @ionic/cli
       - run:
           name: Build de la aplicación web
-          command: |
-            export NVM_DIR="$HOME/.nvm"
-            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-            ionic build --prod
+          command: ionic build --prod
       - run:
           name: Sincronizar Capacitor
-          command: |
-            export NVM_DIR="$HOME/.nvm"
-            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-            npx cap sync ios
+          command: npx cap sync ios
       - restore_cache:
           keys:
             - v1-pods-{{ checksum "ios/App/Podfile.lock" }}
