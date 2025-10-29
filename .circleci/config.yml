@@ -24,7 +24,7 @@ jobs:
 
   build-android:
     docker:
-      - image: cimg/android:2023.12-node
+      - image: cimg/android:2023.09.1-node
     steps:
       - attach_workspace:
           at: .
