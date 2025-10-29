@@ -70,7 +70,8 @@ jobs:
 
   build-ios:
     macos:
-      xcode: 15.0.0
+      xcode: 15.4.0
+    resource_class: macos.m1.medium.gen1
     steps:
       - attach_workspace:
           at: .
@@ -80,52 +81,77 @@ jobs:
             curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-            nvm install 18
-            nvm use 18
+            nvm install 20.19.0
+            nvm use 20.19.0
+      - restore_cache:
+          keys:
+            - v1-npm-{{ checksum "package-lock.json" }}
+            - v1-npm-
       - run:
-          name: Instalar dependencias desde cero
+          name: Instalar dependencias
           command: |
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-            
-            # Eliminar node_modules si existe
-            rm -rf node_modules package-lock.json
-            
-            # Instalar
-            npm install --legacy-peer-deps
+            npm ci --legacy-peer-deps || npm install --legacy-peer-deps
+      - save_cache:
+          key: v1-npm-{{ checksum "package-lock.json" }}
+          paths:
+            - node_modules
       - run:
-          name: Instalar Ionic y Capacitor
+          name: Instalar Ionic CLI
           command: |
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
             npm install -g @ionic/cli
+      - run:
+          name: Build de la aplicación web
+          command: |
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            ionic build --prod
       - run:
           name: Sincronizar Capacitor
           command: |
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
             npx cap sync ios
+      - restore_cache:
+          keys:
+            - v1-pods-{{ checksum "ios/App/Podfile.lock" }}
+            - v1-pods-
       - run:
           name: Instalar CocoaPods
           command: |
             cd ios/App
             pod install
+      - save_cache:
+          key: v1-pods-{{ checksum "ios/App/Podfile.lock" }}
+          paths:
+            - ios/App/Pods
       - run:
           name: Configurar certificados
           command: |
+            # Decodificar certificados
             echo $IOS_CERTIFICATE_BASE64 | base64 -d > certificate.p12
             echo $IOS_PROFILE_BASE64 | base64 -d > profile.mobileprovision
             
+            # Crear y configurar keychain
             security create-keychain -p "" build.keychain
-            security import certificate.p12 -k build.keychain -P $IOS_CERTIFICATE_PASSWORD -T /usr/bin/codesign
+            security import certificate.p12 -k build.keychain -P $IOS_CERTIFICATE_PASSWORD -A -T /usr/bin/codesign
             security list-keychains -s build.keychain
             security default-keychain -s build.keychain
             security unlock-keychain -p "" build.keychain
             security set-keychain-settings -t 3600 -u build.keychain
-            security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
+            security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "" build.keychain
             
+            # Instalar provisioning profile
+            UUID=$(grep UUID -A1 -a profile.mobileprovision | grep -io "[-A-F0-9]\{36\}")
             mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-            cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
+            cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
+            
+            # Verificar instalación
+            security find-identity -v -p codesigning
+            echo "Provisioning profile UUID: $UUID"
       - run:
           name: Crear exportOptions.plist
           command: |
@@ -137,11 +163,15 @@ jobs:
                   <key>method</key>
                   <string>app-store</string>
                   <key>teamID</key>
-                  <string>YOUR_TEAM_ID</string>
+                  <string>${IOS_TEAM_ID}</string>
                   <key>uploadSymbols</key>
                   <true/>
                   <key>compileBitcode</key>
                   <false/>
+                  <key>signingStyle</key>
+                  <string>manual</string>
+                  <key>stripSwiftSymbols</key>
+                  <true/>
               </dict>
               </plist>
               EOF
@@ -149,16 +179,27 @@ jobs:
           name: Build iOS
           command: |
             cd ios/App
+            
+            # Limpiar builds anteriores
+            xcodebuild clean -workspace App.xcworkspace -scheme App -configuration Release
+            
+            # Crear archive
             xcodebuild -workspace App.xcworkspace \
               -scheme App \
               -configuration Release \
               -archivePath App.xcarchive \
-              archive
+              -sdk iphoneos \
+              -destination 'generic/platform=iOS' \
+              CODE_SIGN_STYLE=Manual \
+              DEVELOPMENT_TEAM=$IOS_TEAM_ID \
+              archive | xcpretty
             
+            # Exportar IPA
             xcodebuild -exportArchive \
               -archivePath App.xcarchive \
               -exportOptionsPlist exportOptions.plist \
-              -exportPath ./build
+              -exportPath ./build \
+              -allowProvisioningUpdates
       - store_artifacts:
           path: ios/App/build
           destination: ios-build/
