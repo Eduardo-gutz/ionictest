@@ -88,16 +88,10 @@ jobs:
             - v1-npm-{{ checksum "package-lock.json" }}
             - v1-npm-
       - run:
-          name: Instalar dependencias
+          name: "Install npm packages"
           command: |
-            export NVM_DIR="$HOME/.nvm"
-            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-            
-            # Limpiar node_modules del workspace anterior
-            rm -rf node_modules
-            
-            # Intentar npm ci, si falla usar npm install
-            npm ci --legacy-peer-deps || npm install --legacy-peer-deps
+            sudo chown -R distiller:staff ../.config
+            npm install
       - save_cache:
           key: v1-npm-{{ checksum "package-lock.json" }}
           paths:
