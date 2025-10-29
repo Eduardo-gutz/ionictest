@@ -88,10 +88,8 @@ jobs:
             - v1-npm-{{ checksum "package-lock.json" }}
             - v1-npm-
       - run:
-          name: "Install npm packages"
-          command: |
-            sudo chown -R distiller:staff ../.config
-            npm install
+          name: Instalar dependencias
+          command: sudo npm install --legacy-peer-deps
       - save_cache:
           key: v1-npm-{{ checksum "package-lock.json" }}
           paths:
