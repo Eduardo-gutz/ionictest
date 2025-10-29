@@ -22,7 +22,7 @@ jobs:
           paths:
             - .
 
-  build-android:
+  android:
     docker:
       - image: cimg/android:2025.01.1-browsers
     steps:
@@ -62,11 +62,7 @@ jobs:
           destination: apk/
       - store_artifacts:
           path: android/app/build/outputs/apk/release
-          destination: apk-outputs/
-      - store_artifacts:
-          path: android/app/build/outputs/logs
-          destination: build-logs/
-          when: always
+          destination: apk/
       - persist_to_workspace:
           root: .
           paths:
@@ -141,21 +137,13 @@ jobs:
               -exportPath ./build
       - store_artifacts:
           path: ios/App/build
-          destination: ios-build
+          destination: ios-build/
 
 workflows:
   build-and-deploy:
     jobs:
       - build-and-test
-      - build-android:
-          requires:
-            - build-and-test
-          filters:
-            branches:
-              only: 
-                - main
-                - develop
-      # - build-ios:
+      # - build-android:
       #     requires:
       #       - build-and-test
       #     filters:
@@ -163,3 +151,11 @@ workflows:
       #         only: 
       #           - main
       #           - develop
+      - build-ios:
+          requires:
+            - build-and-test
+          filters:
+            branches:
+              only: 
+                - main
+                - develop
