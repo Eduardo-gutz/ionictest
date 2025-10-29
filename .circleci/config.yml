@@ -75,21 +75,28 @@ jobs:
     steps:
       - attach_workspace:
           at: .
-      - run:
-          name: Instalar Node.js
-          command: |
-            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
-            export NVM_DIR="$HOME/.nvm"
-            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-            nvm install 20.19.0
-            nvm use 20.19.0
+      # - run:
+      #     name: Instalar Node.js
+      #     command: |
+      #       curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+      #       export NVM_DIR="$HOME/.nvm"
+      #       [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+      #       nvm install 20.19.0
+      #       nvm use 20.19.0
       - restore_cache:
           keys:
             - v1-npm-{{ checksum "package-lock.json" }}
             - v1-npm-
       - run:
           name: Instalar dependencias
-          command: sudo npm install --legacy-peer-deps
+          command: |
+            brew install node 
+
+            # Limpiar node_modules del workspace anterior
+            rm -rf node_modules
+            
+            # Intentar npm ci, si falla usar npm install
+            npm ci --legacy-peer-deps || npm install --legacy-peer-deps
       - save_cache:
           key: v1-npm-{{ checksum "package-lock.json" }}
           paths:
