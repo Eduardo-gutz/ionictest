@@ -58,8 +58,15 @@ jobs:
             ./gradlew assembleRelease
             # Para AAB (Google Play): ./gradlew bundleRelease
       - store_artifacts:
-          path: android/app/build/outputs/apk/release/app-release.apk
-          destination: app-release.apk
+          path: app-release-*.apk
+          destination: apk/
+      - store_artifacts:
+          path: android/app/build/outputs/apk/release
+          destination: apk-outputs/
+      - store_artifacts:
+          path: android/app/build/outputs/logs
+          destination: build-logs/
+          when: always
       - persist_to_workspace:
           root: .
           paths:
