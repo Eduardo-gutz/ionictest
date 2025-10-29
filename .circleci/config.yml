@@ -83,13 +83,6 @@ jobs:
             nvm install 18
             nvm use 18
       - run:
-          name: Checkout de código (sin workspace)
-          command: |
-            # Eliminar esto si usas attach_workspace
-            git clone $CIRCLE_REPOSITORY_URL .
-            git checkout $CIRCLE_BRANCH
-
-      - run:
           name: Instalar dependencias desde cero
           command: |
             export NVM_DIR="$HOME/.nvm"
