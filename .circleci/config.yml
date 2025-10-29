@@ -93,8 +93,8 @@ jobs:
             brew install nvm
 
             export NVM_DIR="$HOME/.nvm"
-              [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm
-              [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion" # This loads nvm bash_completion
+              [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+              [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
 
             nvm install 20.19.0
             nvm use 20.19.0
@@ -110,13 +110,23 @@ jobs:
             - node_modules
       - run:
           name: Instalar Ionic CLI
-          command: npm install -g @ionic/cli
+          command: |
+            export NVM_DIR="$HOME/.nvm"
+              [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+              [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+            npm install -g @ionic/cli
       - run:
           name: Build de la aplicación web
-          command: ionic build --prod
+          command: |
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            ionic build --prod
       - run:
           name: Sincronizar Capacitor
-          command: npx cap sync ios
+          command: |
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            npx cap sync ios
       - restore_cache:
           keys:
             - v1-pods-{{ checksum "ios/App/Podfile.lock" }}
