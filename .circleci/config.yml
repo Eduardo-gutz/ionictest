@@ -24,7 +24,7 @@ jobs:
 
   build-android:
     docker:
-      - image: cimg/android:2023.09.1-node
+      - image: cimg/android:2023.09.1-browsers
     steps:
       - attach_workspace:
           at: .
@@ -148,11 +148,11 @@ workflows:
               only: 
                 - main
                 - develop
-      - build-ios:
-          requires:
-            - build-and-test
-          filters:
-            branches:
-              only: 
-                - main
-                - develop
+      # - build-ios:
+      #     requires:
+      #       - build-and-test
+      #     filters:
+      #       branches:
+      #         only: 
+      #           - main
+      #           - develop
